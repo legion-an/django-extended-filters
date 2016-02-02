@@ -1,0 +1,43 @@
+{% load i18n %}
+<h3>{{ title }}</h3>
+<ul class="admin-filter-{{ title|cut:' ' }}">
+    <li>
+        {% for choice in choices %}
+            <div>
+                <input type="checkbox" {% if choice.selected %}checked="checked"{% endif %} field_name="{{ choice.field }}"
+                       value="{{ choice.value }}" class="{{ title|cut:' ' }}" query_string="{{ choice.query_string|iriencode }}">
+                {{ choice.display }}
+            </div>
+        {% endfor %}
+        <input type="submit" onclick="get_filter('{{ title|cut:' ' }}')" value="{% trans "Search" %}">
+        <input type="reset" onclick="get_clear_filter('{{ title|cut:' ' }}')" value="{% trans "Clear" %}">
+    </li>
+    <script>
+        function get_filter(title){
+            var checkboxes = $("input."+title+":checkbox:checked");
+            var input = $('input.'+title );
+            var query_string = input.attr('query_string');
+            var url = window.location.pathname + query_string;
+            if (checkboxes.length > 0) {
+                var field_name = input.attr('field_name');
+                url += '&' + field_name + '=';
+                checkboxes.each(function(){
+                    url += $(this).val()+',';
+                });
+                window.location = url.replace(/,$/, '');
+            } else {
+                window.location = url;
+            }
+            event.preventDefault();
+        }
+        function get_clear_filter(title){
+            var checkboxes = $("input."+title+":checkbox:checked");
+            var input = $('input.'+title );
+            var query_string = input.attr('query_string');
+            checkboxes.each(function(){
+                $(this).removeAttr('checked');
+            });
+            window.location = window.location.pathname + query_string;
+        }
+    </script>
+</ul>

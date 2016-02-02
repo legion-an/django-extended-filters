@@ -1,0 +1,44 @@
+{% load i18n admin_static %}
+<h3>{% blocktrans with filter_title=title %} By {{ filter_title }} {% endblocktrans %}</h3>
+<style>
+    .calendarbox, .clockbox {
+        /* Make sure the calendar widget popover displays in front of the sidebar */
+        z-index: 1100;
+        margin-left: -16em !important;
+        margin-top: 9em !important;
+    }
+    .datetimeshortcuts {
+        /* Hide "|" symbol */
+        font-size: 0;
+    }
+    .datetimeshortcuts a:before{
+        /* Restore deleted spaces */
+        content: " ";
+    }
+    .datetimeshortcuts a{
+        /* Make text for "Today" a bit smaller so it appears on one line. */
+        font-size: 7pt;
+    }
+</style>
+<form method="GET" action="" id="{{ title|cut:" " }}">
+    {{ spec.form.media }}
+    {{ spec.form.as_p }}
+    {% for choice in choices %}
+        <input type="hidden" id="{{ title|cut:" " }}-query-string" value="{{ choice.query_string }}">
+    {% endfor %}
+    <p class="submit-row">
+        <input type="submit" value="{% trans "Search" %}" onclick="get_date_filter(event, '{{ title|cut:" " }}')">
+        <input type="reset" value="{% trans "Clear" %}" onclick="get_reset_date_filter('{{ title|cut:" " }}')">
+    </p>
+</form>
+<script>
+    function get_date_filter(event, title){
+        event.preventDefault();
+        var query_string = $('input#'+title+'-query-string').val();
+        window.location = window.location.pathname + query_string + '&' + $('#'+title).serialize();
+    }
+    function get_reset_date_filter(title){
+        var query_string = $('input#'+title+'-query-string').val();
+        window.location = window.location.pathname + query_string;
+    }
+</script>
