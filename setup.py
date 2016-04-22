@@ -19,6 +19,6 @@ setup(
         'django admin filter'
     ],
     install_requires=[
-        "Django>=1.8.0",
+        "django",
     ],
 )
