@@ -1,7 +1,7 @@
 import datetime
 
 from django.utils.encoding import smart_text
-from django.db.models.fields.related import ForeignKey
+from django.db.models.fields.related import ForeignKey, ManyToManyField
 from django.contrib import admin
 
 from .forms import DateRangeForm
@@ -52,7 +52,7 @@ class CheckBoxListFilter(admin.ChoicesFieldListFilter):
         if self.field.flatchoices:
             self.lookup_kwarg = '%s__in' % field_path
             self.lookup_choices = self.field.flatchoices
-        elif isinstance(field, ForeignKey):
+        elif isinstance(field, ForeignKey) or isinstance(field, ManyToManyField):
             rel_name = field.rel.get_related_field().name
             self.lookup_kwarg = '%s__%s__in' % (field_path, rel_name)
             self.lookup_choices = self.field_choices(field, request, model_admin)
