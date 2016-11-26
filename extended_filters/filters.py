@@ -3,8 +3,16 @@ import datetime
 from django.utils.encoding import smart_text
 from django.db.models.fields.related import ForeignKey, ManyToManyField
 from django.contrib import admin
+from django.contrib.admin.options import IncorrectLookupParameters
+from django.conf import settings
+from django.forms import ValidationError
 
 from .forms import DateRangeForm
+
+MPTT = False
+if 'mptt' in settings.INSTALLED_APPS:
+    from mptt.forms import TreeNodeChoiceField
+    MPTT = True
 
 
 class DateRangeFilter(admin.filters.FieldListFilter):
@@ -77,3 +85,29 @@ class CheckBoxListFilter(admin.ChoicesFieldListFilter):
                 'value': lookup,
                 'field': self.lookup_kwarg,
             }
+
+
+class TreeRelatedFieldListFilter(admin.RelatedFieldListFilter):
+
+    def field_choices(self, field, request, model_admin):
+        if not MPTT:
+            raise NotImplementedError("you need to install mptt module and add it to INSTALLED_APPS")
+        form_field = TreeNodeChoiceField(queryset=field.related_model.objects.all(), empty_label=None)
+        return form_field.choices
+
+
+class TreeDescendantsRelatedFieldListFilter(TreeRelatedFieldListFilter):
+
+    def queryset(self, request, queryset):
+        used_parameters = self.used_parameters.copy()
+        if self.lookup_kwarg in used_parameters:
+            field_path = self.lookup_kwarg.rstrip('__exact').split('__')
+            item = self.field.related_model.objects.get(**{'id': used_parameters[self.lookup_kwarg]})
+            if not item.is_leaf_node():
+                del used_parameters[self.lookup_kwarg]
+                key = '%s__in' % '__'.join(f for f in field_path)
+                used_parameters[key] = item.get_descendants(include_self=True).values('id')
+        try:
+            return queryset.filter(**used_parameters)
+        except ValidationError as e:
+            raise IncorrectLookupParameters(e)
