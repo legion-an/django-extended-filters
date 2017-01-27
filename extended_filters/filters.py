@@ -4,15 +4,17 @@ from django.utils.encoding import smart_text
 from django.db.models.fields.related import ForeignKey, ManyToManyField
 from django.contrib import admin
 from django.contrib.admin.options import IncorrectLookupParameters
-from django.conf import settings
 from django.forms import ValidationError
+from django.contrib.admin.utils import prepare_lookup_value
 
 from .forms import DateRangeForm
+from . import MPTT, AUTOCOMPLETE
 
-MPTT = False
-if 'mptt' in settings.INSTALLED_APPS:
+if MPTT:
     from mptt.forms import TreeNodeChoiceField
-    MPTT = True
+
+if AUTOCOMPLETE:
+    from .forms import AutocompleteForm
 
 
 class DateRangeFilter(admin.filters.FieldListFilter):
@@ -87,27 +89,78 @@ class CheckBoxListFilter(admin.ChoicesFieldListFilter):
             }
 
 
-class TreeRelatedFieldListFilter(admin.RelatedFieldListFilter):
+if MPTT:
+    class TreeRelatedFilter(admin.RelatedFieldListFilter):
 
-    def field_choices(self, field, request, model_admin):
-        if not MPTT:
-            raise NotImplementedError("you need to install mptt module and add it to INSTALLED_APPS")
-        form_field = TreeNodeChoiceField(queryset=field.related_model.objects.all(), empty_label=None)
-        return form_field.choices
+        def field_choices(self, field, request, model_admin):
+            form_field = TreeNodeChoiceField(queryset=field.related_model.objects.all(), empty_label=None)
+            return form_field.choices
 
 
-class TreeDescendantsRelatedFieldListFilter(TreeRelatedFieldListFilter):
+    class TreeDescendantsFilter(TreeRelatedFilter):
 
-    def queryset(self, request, queryset):
-        used_parameters = self.used_parameters.copy()
-        if self.lookup_kwarg in used_parameters:
-            field_path = self.lookup_kwarg.rstrip('__exact').split('__')
-            item = self.field.related_model.objects.get(**{'id': used_parameters[self.lookup_kwarg]})
-            if not item.is_leaf_node():
-                del used_parameters[self.lookup_kwarg]
-                key = '%s__in' % '__'.join(f for f in field_path)
-                used_parameters[key] = item.get_descendants(include_self=True).values('id')
-        try:
-            return queryset.filter(**used_parameters)
-        except ValidationError as e:
-            raise IncorrectLookupParameters(e)
+        def queryset(self, request, queryset):
+            used_parameters = self.used_parameters.copy()
+            if self.lookup_kwarg in used_parameters:
+                field_path = self.lookup_kwarg.rstrip('__exact').split('__')
+                item = self.field.related_model.objects.get(**{'id': used_parameters[self.lookup_kwarg]})
+                if not item.is_leaf_node():
+                    del used_parameters[self.lookup_kwarg]
+                    key = '%s__in' % '__'.join(f for f in field_path)
+                    used_parameters[key] = item.get_descendants(include_self=True).values('id')
+            try:
+                return queryset.filter(**used_parameters)
+            except ValidationError as e:
+                raise IncorrectLookupParameters(e)
+
+
+if AUTOCOMPLETE:
+    class BaseAutocompleteFilter:
+        template = 'extended_filters/autocomplete_filter.html'
+        lookup_kwarg = None
+
+        def __init__(self, field, request, params, model, model_admin, field_path):
+            super().__init__(field, request, params, model, model_admin, field_path)
+            self.lookup_kwarg = field_path.replace('__id__exact', '')
+            self.params = dict(request.GET.items())
+            for p in self.expected_parameters():
+                if p in params:
+                    value = params.pop(p)
+                    self.used_parameters[p] = prepare_lookup_value(p, value)
+            self.form = self.get_form(request, field, field_path, model)
+
+        def get_form(self, request, field, field_path, model):
+            return AutocompleteForm(request=request, field=field, field_path=field_path, data=self.used_parameters,
+                                    model=model)
+
+        def expected_parameters(self):
+            return [self.lookup_kwarg]
+
+        def choices(self, cl):
+            return []
+
+        class Media:
+            """Automatically include static files for the admin."""
+
+            css = {
+                'all': (
+                    'autocomplete_light/vendor/select2/dist/css/select2.css',
+                    'autocomplete_light/select2.css',
+                    'extended_filters/css/autocomplete_filters.css'
+                )
+            }
+            js = (
+                'autocomplete_light/jquery.init.js',
+                'autocomplete_light/autocomplete.init.js',
+                'autocomplete_light/vendor/select2/dist/js/select2.full.js',
+                'autocomplete_light/forward.js',
+                'autocomplete_light/select2.js',
+            )
+
+
+    class AutocompleteFilter(BaseAutocompleteFilter, admin.FieldListFilter): pass
+
+
+if MPTT and AUTOCOMPLETE:
+
+    class TreeDescendantsAutocompleteFilter(BaseAutocompleteFilter, TreeDescendantsFilter): pass

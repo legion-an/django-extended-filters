@@ -1,0 +1,7 @@
+span.select2-selection.select2-selection--single {
+    width: 80%;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    right: 20%;
+}

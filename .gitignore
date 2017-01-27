@@ -59,3 +59,9 @@ docs/_build/
 target/
 
 .idea
+/django_extended_filters
+manage.py
+db.sqlite3
+/static
+/templates
+/static_build
