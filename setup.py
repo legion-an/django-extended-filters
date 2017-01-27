@@ -4,7 +4,7 @@ files = ["templates/extended_filters/*", 'locale/ru/LC_MESSAGES/*']
 
 setup(
     name='django-extended-filters',
-    version='0.3',
+    version='0.3.1',
     packages=['extended_filters'],
     url='https://bitbucket.org/legion_an/django-extended-filters',
     package_data = {'extended_filters' : files },

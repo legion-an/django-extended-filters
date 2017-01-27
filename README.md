@@ -22,5 +22,21 @@ class AdminModel(admin.Model):
         ('category', TreeDescendantsFilter),    # filter your items in children category
         ('anouther_data', AutocompleteFilter),  # autocomplete
     ]
+    
+    # for autocomplete static
+    
+    class Media:
+        css = AutocompleteFilter.Media.css
+        js = AutocompleteFilter.Media.js
+
+
+# urls.py
+# add to urls.py for autocomplete
+
+urlpatterns = [
+    ...
+    url(r'^extended-filters/', include('extended_filters.urls')),
+    ...
+]
 
 ```
