@@ -1,13 +1,12 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
-files = ["templates/extended_filters/*", 'locale/ru/LC_MESSAGES/*']
 
 setup(
     name='django-extended-filters',
-    version='0.3.1',
-    packages=['extended_filters'],
+    version='0.3.2',
     url='https://bitbucket.org/legion_an/django-extended-filters',
-    package_data = {'extended_filters' : files },
+    packages=find_packages(),
+    include_package_data=True,
     license='',
     author='legion',
     author_email='legion_an@mail.ru',

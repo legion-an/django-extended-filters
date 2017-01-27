@@ -1,0 +1,3 @@
+recursive-include extended_filters/templates *
+recursive-include extended_filters/static *
+recursive-include extended_filters/locale *
