@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='django-extended-filters',
-    version='0.3.2',
+    version='0.3.3',
     url='https://bitbucket.org/legion_an/django-extended-filters',
     packages=find_packages(),
     include_package_data=True,
