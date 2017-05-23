@@ -1,1 +1,4 @@
 django
+django-autocomplete-light
+django-mptt
+django-debug-toolbar

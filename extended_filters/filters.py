@@ -130,8 +130,7 @@ if AUTOCOMPLETE:
             self.form = self.get_form(request, field, field_path, model)
 
         def get_form(self, request, field, field_path, model):
-            return AutocompleteForm(request=request, field=field, field_path=field_path, data=self.used_parameters,
-                                    model=model)
+            return AutocompleteForm(request=request, field_path=field_path, data=self.used_parameters, model=model)
 
         def expected_parameters(self):
             return [self.lookup_kwarg]
