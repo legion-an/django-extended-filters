@@ -1,5 +1,8 @@
 from django import forms
-from django.shortcuts import reverse
+try:
+    from django.shortcuts import reverse
+except ImportError:
+    from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext as _
 from django.contrib.admin.templatetags.admin_static import static
 from django.contrib.admin.widgets import AdminDateWidget
