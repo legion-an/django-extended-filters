@@ -8,7 +8,6 @@ from django.db.models import Model, Q
 from django.contrib.admin.sites import site
 from django.contrib.admin.utils import get_fields_from_path, get_model_from_relation
 
-
 from dal.autocomplete import Select2ListView, Select2QuerySetView
 
 
@@ -54,7 +53,7 @@ class FilterListAutocomplete(Select2ListView, BaseAutocomplete):
         qs = Model._default_manager.exclude(**{'%s__isnull' % field_path: True})
         results = self.get_choices(qs, field_path)
         if self.q:
-            results = [x for x in results if self.q in x]
+            results = [x for x in results if self.q in str(x)]  # result can be an integer
 
         query_string = get_query_string(request.GET, remove=[field_path, 'q'])
         return http.HttpResponse(json.dumps({

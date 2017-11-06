@@ -1,11 +1,13 @@
 import datetime
 
 from django.utils.encoding import smart_text
+from django.utils.http import urlencode
 from django.db.models.fields.related import ForeignKey, ManyToManyField
 from django.contrib import admin
 from django.contrib.admin.options import IncorrectLookupParameters
-from django.forms import ValidationError
 from django.contrib.admin.utils import prepare_lookup_value
+from django.contrib.admin.sites import site
+from django.forms import ValidationError
 
 from .forms import DateRangeForm
 from . import MPTT, AUTOCOMPLETE
@@ -26,9 +28,13 @@ class DateRangeFilter(admin.filters.FieldListFilter):
         super(DateRangeFilter, self).__init__(
             field, request, params, model, model_admin, field_path)
         self.form = self.get_form(request)
+        data = request.GET.copy()
+        data.pop(self.lookup_kwarg_since, None)
+        data.pop(self.lookup_kwarg_upto, None)
+        self.query_string = '?%s' % urlencode(sorted(data.items()))
 
     def choices(self, cl):
-        yield {'query_string': cl.get_query_string({}, remove=[self.lookup_kwarg_since, self.lookup_kwarg_upto])}
+        yield {}
 
     def expected_parameters(self):
         return [self.lookup_kwarg_since, self.lookup_kwarg_upto]
@@ -49,8 +55,7 @@ class DateRangeFilter(admin.filters.FieldListFilter):
                 filter_params['%s__lt' % self.field_path] = lookup_kwarg_upto_value + datetime.timedelta(days=1)
 
             return queryset.filter(**filter_params)
-        else:
-            return queryset
+        return queryset
 
 
 class CheckBoxListFilter(admin.ChoicesFieldListFilter):
@@ -62,7 +67,7 @@ class CheckBoxListFilter(admin.ChoicesFieldListFilter):
         if self.field.flatchoices:
             self.lookup_kwarg = '%s__in' % field_path
             self.lookup_choices = self.field.flatchoices
-        elif isinstance(field, ForeignKey) or isinstance(field, ManyToManyField):
+        elif isinstance(field, (ForeignKey, ManyToManyField)):
             rel_name = field.rel.get_related_field().name
             self.lookup_kwarg = '%s__%s__in' % (field_path, rel_name)
             self.lookup_choices = self.field_choices(field, request, model_admin)
@@ -71,6 +76,9 @@ class CheckBoxListFilter(admin.ChoicesFieldListFilter):
             self.lookup_choices = field.model.objects.all().distinct().values_list(field.name, field.name)
 
         self.lookup_val = request.GET.get(self.lookup_kwarg, '')
+        data = request.GET.copy()
+        data.pop(self.lookup_kwarg, None)
+        self.query_string = '?%s' % urlencode(sorted(data.items()))
 
     def expected_parameters(self):
         return [self.lookup_kwarg]
@@ -81,11 +89,9 @@ class CheckBoxListFilter(admin.ChoicesFieldListFilter):
     def choices(self, cl):
         for lookup, title in self.lookup_choices:
             yield {
-                'selected': smart_text(lookup) in self.lookup_val.split(','),
-                'query_string': cl.get_query_string({}, remove=[self.lookup_kwarg]),
+                'selected': smart_text(lookup) in self.lookup_val.split(',') if self.lookup_val else False,
                 'display': title,
                 'value': lookup,
-                'field': self.lookup_kwarg,
             }
 
 
@@ -127,10 +133,15 @@ if AUTOCOMPLETE:
                 if p in params:
                     value = params.pop(p)
                     self.used_parameters[p] = prepare_lookup_value(p, value)
+
+            autocomplete_fields = getattr(site._registry.get(model), 'autocomplete_fields', None)
+            if not autocomplete_fields:
+                raise NotImplementedError("You must setup autocomplete fields")
+
             self.form = self.get_form(request, field, field_path, model)
 
         def get_form(self, request, field, field_path, model):
-            return AutocompleteForm(request=request, field_path=field_path, data=self.used_parameters, model=model)
+            return AutocompleteForm(request=request, model=model, field_path=field_path, data=self.used_parameters)
 
         def expected_parameters(self):
             return [self.lookup_kwarg]

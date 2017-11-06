@@ -1,5 +1,6 @@
-<h3>{{ title }}</h3>
-<ul class="admin-filter-{{ title|cut:' ' }}">
+{% load i18n %}
+<h3>{% trans 'By' %} {{ title }}</h3>
+<ul>
   <li>
     {{ spec.form.field }}
   </li>

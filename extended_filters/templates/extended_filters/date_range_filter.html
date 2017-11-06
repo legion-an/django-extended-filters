@@ -23,25 +23,24 @@
         display: inline;
     }
 </style>
-<form method="GET" action="" id="{{ title|cut:" " }}">
+<form method="GET" action="" data-query-string="{{ spec.query_string }}">
     {{ spec.form.media }}
     {{ spec.form.as_p }}
-    {% for choice in choices %}
-        <input type="hidden" id="{{ title|cut:" " }}-query-string" value="{{ choice.query_string }}">
-    {% endfor %}
     <p class="submit-row">
-        <input type="submit" value="{% trans "Search" %}" onclick="get_date_filter(event, '{{ title|cut:" " }}')">
-        <input type="reset" value="{% trans "Clear" %}" onclick="get_reset_date_filter('{{ title|cut:" " }}')">
+        <input class="date-range-filter-submit" type="submit" value="{% trans "Search" %}">
+        <input class="data-range-filter-reset" type="reset" value="{% trans "Clear" %}">
     </p>
 </form>
 <script>
-    function get_date_filter(event, title){
-        event.preventDefault();
-        var query_string = $('input#'+title+'-query-string').val();
-        window.location = window.location.pathname + query_string + '&' + $('#'+title).serialize();
-    }
-    function get_reset_date_filter(title){
-        var query_string = $('input#'+title+'-query-string').val();
-        window.location = window.location.pathname + query_string;
-    }
+    $(function () {
+        $(document.body).on('click', '.date-range-filter-submit', function (e) {
+            e.preventDefault();
+            var $parent = $(this).parents('form');
+            window.location = window.location.pathname + $parent.data('query-string') + '&' + $parent.serialize();
+        });
+        $(document.body).on('click', '.data-range-filter-reset', function (e) {
+            e.preventDefault();
+            window.location = window.location.pathname + $(this).parents('form').data('query-string');
+        });
+    });
 </script>

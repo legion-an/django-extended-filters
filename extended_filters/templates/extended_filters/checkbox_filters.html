@@ -1,43 +1,44 @@
 {% load i18n %}
-<h3>{{ title }}</h3>
-<ul class="admin-filter-{{ title|cut:' ' }}">
-    <li>
+<h3>{% trans 'By' %} {{ title }}</h3>
+<ul>
+    <li data-field="{{ spec.lookup_kwarg }}" data-query-string="{{ spec.query_string }}">
         {% for choice in choices %}
             <div>
-                <input type="checkbox" {% if choice.selected %}checked="checked"{% endif %} field_name="{{ choice.field }}"
-                       value="{{ choice.value }}" class="{{ title|cut:' ' }}" query_string="{{ choice.query_string|iriencode }}">
+                <input type="checkbox" {% if choice.selected %}checked="checked"{% endif %} value="{{ choice.value }}" class="checkbox-filter">
                 {{ choice.display }}
             </div>
         {% endfor %}
-        <input type="submit" onclick="get_filter('{{ title|cut:' ' }}')" value="{% trans "Search" %}">
-        <input type="reset" onclick="get_clear_filter('{{ title|cut:' ' }}')" value="{% trans "Clear" %}">
+        <input class="submit-checkbox-filter" type="submit" value="{% trans "Search" %}">
+        <input class="reset-checkbox-filter" type="reset" value="{% trans "Clear" %}">
     </li>
     <script>
-        function get_filter(title){
-            var checkboxes = $("input."+title+":checkbox:checked");
-            var input = $('input.'+title );
-            var query_string = input.attr('query_string');
-            var url = window.location.pathname + query_string;
-            if (checkboxes.length > 0) {
-                var field_name = input.attr('field_name');
-                url += '&' + field_name + '=';
-                checkboxes.each(function(){
-                    url += $(this).val()+',';
-                });
-                window.location = url.replace(/,$/, '');
-            } else {
-                window.location = url;
-            }
-            event.preventDefault();
-        }
-        function get_clear_filter(title){
-            var checkboxes = $("input."+title+":checkbox:checked");
-            var input = $('input.'+title );
-            var query_string = input.attr('query_string');
-            checkboxes.each(function(){
-                $(this).removeAttr('checked');
+        $(function () {
+            $(document.body).on('click', '.submit-checkbox-filter', function (e) {
+                e.preventDefault();
+                var $parent = $(this).parent();
+                var url = window.location.pathname + $parent.data('query-string');
+                var checkboxes = $parent.find('input.checkbox-filter:checkbox:checked');
+                if (checkboxes.length) {
+                    var fieldName = $parent.data('field');
+                    url += '&' + fieldName + '=';
+                    var values = $.map(checkboxes, function(n, i){
+                          return n.value;
+                    }).join(',');
+                    window.location = url + values;
+                } else {
+                    window.location = url;
+                }
             });
-            window.location = window.location.pathname + query_string;
-        }
+
+            $(document.body).on('click', '.reset-checkbox-filter', function (e) {
+                e.preventDefault();
+                var $parent = $(this).parent();
+                var checkboxes = $parent.find('input.checkbox-filter:checkbox:checked');
+                checkboxes.each(function () {
+                    $(this).removeAttr('checked');
+                });
+                window.location = window.location.pathname + $parent.data('query-string');
+            });
+        });
     </script>
 </ul>

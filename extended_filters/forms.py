@@ -6,8 +6,7 @@ except ImportError:
 from django.utils.translation import ugettext as _
 from django.contrib.admin.templatetags.admin_static import static
 from django.contrib.admin.widgets import AdminDateWidget
-from django.contrib.admin.utils import get_fields_from_path
-from django.utils import six
+from django.contrib.admin.utils import get_fields_from_path, get_model_from_relation
 
 from . import AUTOCOMPLETE
 
@@ -61,19 +60,12 @@ class DateRangeForm(forms.Form):
 if AUTOCOMPLETE:
     class AutocompleteForm(forms.Form):
 
-        def __init__(self, *args, **kwargs):
-            model = kwargs.pop('model')
-            request = kwargs.pop('request')
-            self.field_path = kwargs.pop('field_path')
+        def __init__(self, request, model, field_path, *args, **kwargs):
+            self.field_path = field_path
             value = kwargs.get('data').get(self.field_path)
             fields = get_fields_from_path(model, self.field_path)
-            url = 'filter_model_autocomplete' if fields[0].is_relation else 'filter_list_autocomplete'
-            is_relation = url == 'filter_model_autocomplete'
-
-            if value:
-                choices = [(value, value)]
-            else:
-                choices = []
+            is_relation = fields[0].is_relation
+            url = 'filter_model_autocomplete' if is_relation else 'filter_list_autocomplete'
 
             super(AutocompleteForm, self).__init__(*args, **kwargs)
             url = reverse(
@@ -88,10 +80,15 @@ if AUTOCOMPLETE:
                 url = '%s?%s' % (url, request.GET.urlencode())
 
             if is_relation:
+                related_model = get_model_from_relation(fields[-1])
+                qs = related_model._default_manager.all()
+                if value:
+                    qs = qs.filter(pk=value)
                 self.fields[self.field_path] = forms.ModelChoiceField(
-                    queryset=model._default_manager.none(), required=False, widget=ModelSelect2(url=url)
+                    queryset=qs, required=False, widget=ModelSelect2(url=url)
                 )
             else:
+                choices = [(value, value)] if value else []
                 self.fields[self.field_path] = forms.ChoiceField(
                     choices=choices, required=False, widget=ListSelect2(url=url),
                 )
