@@ -126,18 +126,24 @@ class CheckBoxFilterMixin(FilterMediaMixin):
                 'display': title,
                 'value': lookup,
             }
+            
+    def expected_parameters(self):
+        return [self.lookup_kwarg]
 
 
 class CheckBoxSimpleFilter(CheckBoxFilterMixin, admin.SimpleListFilter):
     def __init__(self, request, params, model, model_admin):
-        super(CheckBoxSimpleFilter, self).__init__(request, params, model, model_admin)
         self.setup(request, model_admin)
+        super(CheckBoxSimpleFilter, self).__init__(request, params, model, model_admin)
+
+    def value(self):
+        return self.used_parameters.get(self.parameter_name, '').split(',')
 
 
-class CheckBoxListFilter(CheckBoxFilterMixin, admin.ChoicesFieldListFilter):
+class CheckBoxListFilter(CheckBoxFilterMixin, admin.FieldListFilter):
     def __init__(self, field, request, params, model, model_admin, field_path):
-        super(CheckBoxListFilter, self).__init__(field, request, params, model, model_admin, field_path)
         self.setup(request, model_admin, field, field_path)
+        super(CheckBoxListFilter, self).__init__(field, request, params, model, model_admin, field_path)
 
 
 if MPTT:
