@@ -1,0 +1,15 @@
+{% load i18n %}
+<h3>{% trans 'By' %} {{ title }}</h3>
+<ul>
+    <li data-field="{{ spec.lookup_kwarg }}" data-query-string="{{ spec.query_string }}">
+        {% for choice in choices %}
+            <div>
+                <input type="checkbox" {% if choice.selected %}checked="checked"{% endif %} value="{{ choice.value }}" class="checkbox-filter">
+                {{ choice.display }}
+            </div>
+        {% endfor %}
+        <input class="submit-checkbox-filter" type="submit" value="{% trans "Search" %}">
+        <input class="reset-checkbox-filter" type="reset" value="{% trans "Clear" %}">
+    </li>
+    {{ spec.media }}
+</ul>

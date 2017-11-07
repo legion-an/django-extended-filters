@@ -4,7 +4,6 @@ try:
 except ImportError:
     from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext as _
-from django.contrib.admin.templatetags.admin_static import static
 from django.contrib.admin.widgets import AdminDateWidget
 from django.contrib.admin.utils import get_fields_from_path, get_model_from_relation
 
@@ -39,22 +38,6 @@ class DateRangeForm(forms.Form):
             localize=True,
             required=False,
         )
-
-    @property
-    def media(self):
-        try:
-            if getattr(self.request, 'daterange_filter_media_included'):
-                return forms.Media()
-        except AttributeError:
-            setattr(self.request, 'daterange_filter_media_included', True)
-
-            js = ["calendar.js", "admin/DateTimeShortcuts.js"]
-            css = ['widgets.css']
-
-            return forms.Media(
-                js=[static("admin/js/%s" % path) for path in js],
-                css={'all': [static("admin/css/%s" % path) for path in css]}
-            )
         
 
 if AUTOCOMPLETE:

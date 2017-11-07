@@ -4,10 +4,11 @@ from django.utils.encoding import smart_text
 from django.utils.http import urlencode
 from django.db.models.fields.related import ForeignKey, ManyToManyField
 from django.contrib import admin
+from django.contrib.admin.templatetags.admin_static import static
 from django.contrib.admin.options import IncorrectLookupParameters
 from django.contrib.admin.utils import prepare_lookup_value
 from django.contrib.admin.sites import site
-from django.forms import ValidationError
+from django import forms
 
 from .forms import DateRangeForm
 from . import MPTT, AUTOCOMPLETE
@@ -19,7 +20,42 @@ if AUTOCOMPLETE:
     from .forms import AutocompleteForm
 
 
-class DateRangeFilter(admin.filters.FieldListFilter):
+class FilterMediaMixin:
+    media_attr = 'extended_filters_media_included'
+
+    def __init__(self, *args, **kwargs):
+        super(FilterMediaMixin, self).__init__(*args, **kwargs)
+        if len(args) == 4:
+            self.request = args[0]
+        else:
+            self.request = args[1]
+
+    @property
+    def js(self):
+        return (
+            'extended_filters/js/scripts.js',
+            "admin/js/calendar.js",
+            "admin/js/admin/DateTimeShortcuts.js",
+        )
+
+    @property
+    def css(self):
+        return ('admin/css/widgets.css',)
+
+    @property
+    def media(self):
+        try:
+            if getattr(self.request, self.media_attr):
+                return forms.Media()
+        except AttributeError:
+            setattr(self.request, self.media_attr, True)
+            return forms.Media(
+                js=[static(path) for path in self.js],
+                css={'all': [static(path) for path in self.css]}
+            )
+
+
+class DateRangeFilter(FilterMediaMixin, admin.filters.FieldListFilter):
     template = 'extended_filters/date_range_filter.html'
 
     def __init__(self, field, request, params, model, model_admin, field_path):
@@ -58,30 +94,27 @@ class DateRangeFilter(admin.filters.FieldListFilter):
         return queryset
 
 
-class CheckBoxListFilter(admin.ChoicesFieldListFilter):
-    template = 'extended_filters/checkbox_filters.html'
+class CheckBoxFilterMixin(FilterMediaMixin):
+    template = 'extended_filters/checkbox_filter.html'
 
-    def __init__(self, field, request, params, model, model_admin, field_path):
-        super(CheckBoxListFilter, self).__init__(
-            field, request, params, model, model_admin, field_path)
-        if self.field.flatchoices:
-            self.lookup_kwarg = '%s__in' % field_path
-            self.lookup_choices = self.field.flatchoices
-        elif isinstance(field, (ForeignKey, ManyToManyField)):
-            rel_name = field.rel.get_related_field().name
-            self.lookup_kwarg = '%s__%s__in' % (field_path, rel_name)
-            self.lookup_choices = self.field_choices(field, request, model_admin)
+    def setup(self, request, model_admin, field=None, field_path=None):
+        if field:
+            assert field_path
+            if isinstance(field, (ForeignKey, ManyToManyField)):
+                rel_name = field.rel.get_related_field().name
+                self.lookup_kwarg = '%s__%s__in' % (field_path, rel_name)
+                self.lookup_choices = self.field_choices(field, request, model_admin)
+            else:
+                self.lookup_kwarg = '%s__in' % field_path
+                self.lookup_choices = self.field.flatchoices or \
+                                      field.model.objects.all().distinct().values_list(field.name, field.name)
         else:
-            self.lookup_kwarg = '%s__in' % field_path
-            self.lookup_choices = field.model.objects.all().distinct().values_list(field.name, field.name)
+            self.lookup_kwarg = self.parameter_name
 
         self.lookup_val = request.GET.get(self.lookup_kwarg, '')
         data = request.GET.copy()
         data.pop(self.lookup_kwarg, None)
         self.query_string = '?%s' % urlencode(sorted(data.items()))
-
-    def expected_parameters(self):
-        return [self.lookup_kwarg]
 
     def field_choices(self, field, request, model_admin):
         return field.get_choices(include_blank=False)
@@ -95,8 +128,20 @@ class CheckBoxListFilter(admin.ChoicesFieldListFilter):
             }
 
 
+class CheckBoxSimpleFilter(CheckBoxFilterMixin, admin.SimpleListFilter):
+    def __init__(self, request, params, model, model_admin):
+        super(CheckBoxSimpleFilter, self).__init__(request, params, model, model_admin)
+        self.setup(request, model_admin)
+
+
+class CheckBoxListFilter(CheckBoxFilterMixin, admin.ChoicesFieldListFilter):
+    def __init__(self, field, request, params, model, model_admin, field_path):
+        super(CheckBoxListFilter, self).__init__(field, request, params, model, model_admin, field_path)
+        self.setup(request, model_admin, field, field_path)
+
+
 if MPTT:
-    class TreeRelatedFilter(admin.RelatedFieldListFilter):
+    class TreeRelatedFilter(FilterMediaMixin, admin.RelatedFieldListFilter):
 
         def field_choices(self, field, request, model_admin):
             form_field = TreeNodeChoiceField(queryset=field.related_model.objects.all(), empty_label=None)
@@ -116,14 +161,15 @@ if MPTT:
                     used_parameters[key] = item.get_descendants(include_self=True).values('id')
             try:
                 return queryset.filter(**used_parameters)
-            except ValidationError as e:
+            except forms.ValidationError as e:
                 raise IncorrectLookupParameters(e)
 
 
 if AUTOCOMPLETE:
-    class BaseAutocompleteFilter:
+    class BaseAutocompleteFilter(FilterMediaMixin):
         template = 'extended_filters/autocomplete_filter.html'
         lookup_kwarg = None
+        media_attr = 'dal_filter_media_included'
 
         def __init__(self, field, request, params, model, model_admin, field_path):
             super().__init__(field, request, params, model, model_admin, field_path)
@@ -135,7 +181,7 @@ if AUTOCOMPLETE:
                     self.used_parameters[p] = prepare_lookup_value(p, value)
 
             autocomplete_fields = getattr(site._registry.get(model), 'autocomplete_fields', None)
-            if not autocomplete_fields:
+            if not autocomplete_fields or not autocomplete_fields.get(field_path):
                 raise NotImplementedError("You must setup autocomplete fields")
 
             self.form = self.get_form(request, field, field_path, model)
@@ -149,22 +195,23 @@ if AUTOCOMPLETE:
         def choices(self, cl):
             return []
 
-        class Media:
-            """Automatically include static files for the admin."""
-
-            css = {
-                'all': (
-                    'autocomplete_light/vendor/select2/dist/css/select2.css',
-                    'autocomplete_light/select2.css',
-                    'extended_filters/css/autocomplete_filters.css'
-                )
-            }
-            js = (
+        @property
+        def js(self):
+            return (
                 'autocomplete_light/jquery.init.js',
                 'autocomplete_light/autocomplete.init.js',
                 'autocomplete_light/vendor/select2/dist/js/select2.full.js',
                 'autocomplete_light/forward.js',
                 'autocomplete_light/select2.js',
+                'extended_filters/js/autocomplete_script.js'
+            )
+
+        @property
+        def css(self):
+            return (
+                'autocomplete_light/vendor/select2/dist/css/select2.css',
+                'autocomplete_light/select2.css',
+                'extended_filters/css/autocomplete_filters.css'
             )
 
 

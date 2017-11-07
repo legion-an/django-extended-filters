@@ -11,22 +11,12 @@ from django.contrib.admin.utils import get_fields_from_path, get_model_from_rela
 from dal.autocomplete import Select2ListView, Select2QuerySetView
 
 
-def get_query_string(params, new_params=None, remove=None):
-    if new_params is None:
-        new_params = {}
+def get_query_string(params, remove=None):
     if remove is None:
         remove = []
     p = params.copy()
     for r in remove:
-        for k in list(p):
-            if k.startswith(r):
-                del p[k]
-    for k, v in new_params.items():
-        if v is None:
-            if k in p:
-                del p[k]
-        else:
-            p[k] = v
+        p.pop(r, None)
     return '?%s' % urlencode(sorted(p.items()))
 
 

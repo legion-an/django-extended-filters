@@ -24,23 +24,10 @@
     }
 </style>
 <form method="GET" action="" data-query-string="{{ spec.query_string }}">
-    {{ spec.form.media }}
+    {{ spec.media }}
     {{ spec.form.as_p }}
     <p class="submit-row">
         <input class="date-range-filter-submit" type="submit" value="{% trans "Search" %}">
         <input class="data-range-filter-reset" type="reset" value="{% trans "Clear" %}">
     </p>
 </form>
-<script>
-    $(function () {
-        $(document.body).on('click', '.date-range-filter-submit', function (e) {
-            e.preventDefault();
-            var $parent = $(this).parents('form');
-            window.location = window.location.pathname + $parent.data('query-string') + '&' + $parent.serialize();
-        });
-        $(document.body).on('click', '.data-range-filter-reset', function (e) {
-            e.preventDefault();
-            window.location = window.location.pathname + $(this).parents('form').data('query-string');
-        });
-    });
-</script>
