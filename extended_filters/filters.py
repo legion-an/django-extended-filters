@@ -137,7 +137,8 @@ class CheckBoxSimpleFilter(CheckBoxFilterMixin, admin.SimpleListFilter):
         super(CheckBoxSimpleFilter, self).__init__(request, params, model, model_admin)
 
     def value(self):
-        return self.used_parameters.get(self.parameter_name, '').split(',')
+        value = self.used_parameters.get(self.parameter_name)
+        return value.split(',') if value else []
 
 
 class CheckBoxListFilter(CheckBoxFilterMixin, admin.FieldListFilter):
