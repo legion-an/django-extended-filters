@@ -106,7 +106,7 @@ class CheckBoxFilterMixin(FilterMediaMixin):
                 self.lookup_choices = self.field_choices(field, request, model_admin)
             else:
                 self.lookup_kwarg = '%s__in' % field_path
-                self.lookup_choices = self.field.flatchoices or \
+                self.lookup_choices = field.flatchoices or \
                                       field.model.objects.all().distinct().values_list(field.name, field.name)
         else:
             self.lookup_kwarg = self.parameter_name
