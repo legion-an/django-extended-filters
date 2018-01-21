@@ -101,8 +101,7 @@ class CheckBoxFilterMixin(FilterMediaMixin):
         if field:
             assert field_path
             if isinstance(field, (ForeignKey, ManyToManyField)):
-                rel_name = field.rel.get_related_field().name
-                self.lookup_kwarg = '%s__%s__in' % (field_path, rel_name)
+                self.lookup_kwarg = '%s__%s__in' % (field_path, field.target_field.name)
                 self.lookup_choices = self.field_choices(field, request, model_admin)
             else:
                 self.lookup_kwarg = '%s__in' % field_path
