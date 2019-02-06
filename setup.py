@@ -9,7 +9,7 @@ setup(
     include_package_data=True,
     license='',
     author='legion',
-    author_email='legion_an@mail.ru',
+    author_email='legion.andrey.89@gmail.com',
     description='Add checkbox, daterange, tree-descendants and autocomplete filters in django admin',
     keywords=[
         'django admin',
