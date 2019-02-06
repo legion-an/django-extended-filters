@@ -1,35 +1,31 @@
-# add checkbox, date-range, tree-descendants and autocomplete filters to django-admin
-# date-range filter based on django-daterange-filter package https://pypi.python.org/pypi/django-daterange-filter/1.3.0
+# This package adds checkbox, date-range, tree-descendants and autocomplete filters to django-admin
+date-range filter based on django-daterange-filter package https://pypi.python.org/pypi/django-daterange-filter
 
+if you want to use autocomplete filter or tree-descendants filter you must install next packages:
 
-# if you want to use autocomplete filter or tree-descendants filter you must install next packages:
-# autocomplete filter uses django-autocomplete-light package https://pypi.python.org/pypi/django-autocomplete-light
-```
-#!python
+for autocomplete:
+```bash
 pip install django-autocomplete-light
 ```
 
-# tree-descendants filter uses django-mptt package https://pypi.python.org/pypi/django-mptt
-```
-#!python
+for tree filter:
+```bash
 pip install django-mptt
 ```
 
-# create dropdown filter if choices count > 3
-# Using DropDown filter: create templates/admin/filter.html 
+for DropDown filter you need to create templates/admin/filter.html with this code: 
+```html
+{% extends 'extended_filters/filter.html' %}
 ```
-#!html
-{% extends ‘extended_filters/filter.html’ %}
-```
+it creates dropdown filter only if choices count > 3
 
 # Using filters:
-# admin.py
-```
-#!python
 
+admin.py
+```python
+from django.contrib import admin
 from extended_filters.filters import AutocompleteFilter, TreeDescendantsFilter, TreeDescendantsAutocompleteFilter, \
     DateRangeFilter, CheckBoxListFilter
-
 
 class AdminModel(admin.Model):
     list_filter = [
@@ -53,11 +49,8 @@ class AdminModel(admin.Model):
     
 ```
 
-# urls.py
-```
-#!python
-
-
+urls.py
+```python
 # add to urls.py for autocomplete
 
 urlpatterns = [
@@ -67,3 +60,6 @@ urlpatterns = [
 ]
 
 ```
+
+# TODO
+1. make autocomplete filter using django autocomplete filter from version 2
