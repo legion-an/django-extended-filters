@@ -3,8 +3,8 @@ from setuptools import setup, find_packages
 
 setup(
     name='django-extended-filters',
-    version='0.5.7',
-    url='https://bitbucket.org/legion_an/django-extended-filters',
+    version='0.7',
+    url='https://github.com/legion-an/django-extended-filters',
     packages=find_packages(),
     include_package_data=True,
     license='',
@@ -20,6 +20,7 @@ setup(
         'django admin autocomplete filter'
     ],
     install_requires=[
-        "django",
+        "Django>=3.0",
     ],
+    long_description='https://github.com/legion-an/django-extended-filters/blob/master/README.md'
 )

@@ -1,13 +1,13 @@
 import datetime
 
-from django.utils.encoding import smart_text
+from django.utils.encoding import smart_str
 from django.utils.http import urlencode
 from django.db.models.fields.related import ForeignKey, ManyToManyField
 from django.contrib import admin
-from django.contrib.admin.templatetags.admin_static import static
 from django.contrib.admin.options import IncorrectLookupParameters
 from django.contrib.admin.utils import prepare_lookup_value
 from django.contrib.admin.sites import site
+from django.templatetags.static import static
 from django import forms
 
 from .forms import DateRangeForm
@@ -121,7 +121,7 @@ class CheckBoxFilterMixin(FilterMediaMixin):
     def choices(self, cl):
         for lookup, title in self.lookup_choices:
             yield {
-                'selected': smart_text(lookup) in self.lookup_val.split(',') if self.lookup_val else False,
+                'selected': smart_str(lookup) in self.lookup_val.split(',') if self.lookup_val else False,
                 'display': title,
                 'value': lookup,
             }

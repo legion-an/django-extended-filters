@@ -3,7 +3,7 @@ try:
     from django.shortcuts import reverse
 except ImportError:
     from django.core.urlresolvers import reverse
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext_lazy as _
 from django.contrib.admin.widgets import AdminDateWidget
 from django.contrib.admin.utils import get_fields_from_path, get_model_from_relation
 
